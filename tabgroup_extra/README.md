@@ -16,9 +16,9 @@ Chrome のタブグループ風に、VS Code のタブ操作を補助する拡�
 ## コマンド
 
 - `TabGroup Extra: 選択タブからグループ作成`
-- `TabGroup Extra: グループを復元`
-- `TabGroup Extra: グループのタブを閉じる`
-- `TabGroup Extra: グループを削除`
+- `TabGroup Extra: 復元する`
+- `TabGroup Extra: グループを閉じる`
+- `TabGroup Extra: 削除する`
 
 ## 検証手順（ローカル開発）
 
@@ -40,6 +40,8 @@ npm run compile
    - `Cmd/Ctrl + Shift + P` で `TabGroup Extra:` コマンドが表示される
    - Activity Bar に `Tab Groups` アイコンが表示される
    - `Saved Groups` ビューで保存グループが見える
+   - グループを展開すると、保存された各タブ名 + パスを確認できる
+   - 項目にホバーするとツールチップで詳細情報を確認できる
 
 ### 3) 動作チェック観点
 
@@ -80,5 +82,6 @@ npx @vscode/vsce package
 ## 仕様上の注意点
 
 - VS Code API の制約により、Chrome のようなネイティブな「タブ自体への色塗り」はできません。
+- そのため、タブ上部に線を引くなどタブUI自体へのワンポイント装飾も、公開 API の範囲では困難です。
 - 本拡張では、保存グループに色ラベルを保持し、一覧表示と操作性を重視した実装にしています。
 - VS Code 標準タブはユーザーが個別に移動可能であり、拡張側で完全固定はできません。
