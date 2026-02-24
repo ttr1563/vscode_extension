@@ -1,0 +1,143 @@
+{
+  "name": "tabgroup-extra",
+  "displayName": "TabGroup Extra",
+  "description": "Chromeライクな色付きタブグループ管理を補助するVS Code拡張",
+  "version": "0.0.1",
+  "publisher": "local-dev",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:tabgroupExtra.createGroupFromSelection",
+    "onCommand:tabgroupExtra.restoreGroup",
+    "onCommand:tabgroupExtra.deleteGroup",
+    "onCommand:tabgroupExtra.closeGroupTabs",
+    "onView:tabgroupExtra.savedGroupsView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "tabgroupExtra.createGroupFromSelection",
+        "title": "選択タブからグループ作成",
+        "category": "TabGroup Extra",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "tabgroupExtra.restoreGroup",
+        "title": "復元する",
+        "category": "TabGroup Extra",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "tabgroupExtra.closeGroupTabs",
+        "title": "グループを閉じる",
+        "category": "TabGroup Extra",
+        "icon": "$(close-all)"
+      },
+      {
+        "command": "tabgroupExtra.deleteGroup",
+        "title": "削除する",
+        "category": "TabGroup Extra",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "tabgroupExtra.refreshSavedGroups",
+        "title": "保存済みグループを更新",
+        "category": "TabGroup Extra",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tabgroupExtraContainer",
+          "title": "Tab Groups",
+          "icon": "media/tabgroup.svg"
+        }
+      ]
+    },
+    "views": {
+      "tabgroupExtraContainer": [
+        {
+          "id": "tabgroupExtra.savedGroupsView",
+          "name": "Saved Groups"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "tabgroupExtra.createGroupFromSelection"
+        },
+        {
+          "command": "tabgroupExtra.restoreGroup"
+        },
+        {
+          "command": "tabgroupExtra.closeGroupTabs"
+        },
+        {
+          "command": "tabgroupExtra.deleteGroup"
+        }
+      ],
+      "tab/context": [
+        {
+          "command": "tabgroupExtra.createGroupFromSelection",
+          "group": "navigation@90"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "tabgroupExtra.refreshSavedGroups",
+          "when": "view == tabgroupExtra.savedGroupsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "tabgroupExtra.restoreGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
+          "group": "inline"
+        },
+        {
+          "command": "tabgroupExtra.restoreGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.restore",
+          "group": "inline"
+        },
+        {
+          "command": "tabgroupExtra.closeGroupTabs",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
+          "group": "inline@2"
+        },
+        {
+          "command": "tabgroupExtra.closeGroupTabs",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.close",
+          "group": "inline@2"
+        },
+        {
+          "command": "tabgroupExtra.deleteGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
+          "group": "inline@3"
+        },
+        {
+          "command": "tabgroupExtra.deleteGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.delete",
+          "group": "inline@3"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.5"
+  }
+}
