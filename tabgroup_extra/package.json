@@ -3,7 +3,17 @@
   "displayName": "TabGroup Extra",
   "description": "Chromeライクな色付きタブグループ管理を補助するVS Code拡張",
   "version": "0.0.1",
-  "publisher": "local-dev",
+  "publisher": "ttr1563",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ttr1563/vscode_extension.git",
+    "directory": "tabgroup_extra"
+  },
+  "homepage": "https://github.com/ttr1563/vscode_extension/tree/main/tabgroup_extra#readme",
+  "bugs": {
+    "url": "https://github.com/ttr1563/vscode_extension/issues"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -13,6 +23,7 @@
   "activationEvents": [
     "onStartupFinished",
     "onCommand:tabgroupExtra.createGroupFromSelection",
+    "onCommand:tabgroupExtra.addSelectionToExistingGroup",
     "onCommand:tabgroupExtra.restoreGroup",
     "onCommand:tabgroupExtra.deleteGroup",
     "onCommand:tabgroupExtra.closeGroupTabs",
@@ -27,6 +38,12 @@
         "title": "選択タブからグループ作成",
         "category": "TabGroup Extra",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "tabgroupExtra.addSelectionToExistingGroup",
+        "title": "選択タブを既存グループへ追加",
+        "category": "TabGroup Extra",
+        "icon": "$(list-selection)"
       },
       {
         "command": "tabgroupExtra.restoreGroup",
@@ -82,6 +99,9 @@
           "command": "tabgroupExtra.createGroupFromSelection"
         },
         {
+          "command": "tabgroupExtra.addSelectionToExistingGroup"
+        },
+        {
           "command": "tabgroupExtra.restoreGroup"
         },
         {
@@ -95,12 +115,20 @@
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
+        },
+        {
+          "command": "tabgroupExtra.addSelectionToExistingGroup",
+          "group": "navigation@91"
         }
       ],
       "editor/title/context": [
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
+        },
+        {
+          "command": "tabgroupExtra.addSelectionToExistingGroup",
+          "group": "navigation@91"
         }
       ],
       "view/title": [
@@ -136,7 +164,9 @@
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package:vsix": "npx @vscode/vsce package",
+    "publish:marketplace": "npx @vscode/vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

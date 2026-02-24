@@ -16,6 +16,7 @@ Chrome のタブグループ風に、VS Code のタブ操作を補助する拡�
 ## コマンド
 
 - `TabGroup Extra: 選択タブからグループ作成`
+- `TabGroup Extra: 選択タブを既存グループへ追加`
 - `TabGroup Extra: 復元する`
 - `TabGroup Extra: グループを閉じる`
 - `TabGroup Extra: 削除する`
@@ -64,13 +65,37 @@ npm run compile
 cd tabgroup_extra
 npm install
 npm run compile
-npx @vscode/vsce package
+npm run package:vsix
 ```
 
 生成された `tabgroup-extra-0.0.1.vsix` を VS Code にインストールします。
 
 - GUI: `Extensions` 画面右上 `...` → `Install from VSIX...`
 - CLI: `code --install-extension tabgroup-extra-0.0.1.vsix`
+
+## Marketplace 公開手順
+
+1. `package.json` の公開情報を確定する
+   - `name` は一度公開すると原則変更しづらいため確定させる
+   - `publisher` は Marketplace で作成した Publisher ID に合わせる
+   - `version` は SemVer で更新する（例: `0.0.2`）
+2. Publisher を作成する
+   - Visual Studio Marketplace で Publisher を新規作成
+3. アクセストークンを作成する
+   - Azure DevOps の Personal Access Token (PAT) を作成
+   - 最小権限は Marketplace の公開に必要な scope（通常は `Marketplace > Manage`）
+4. ローカルでログインする
+   - `npx @vscode/vsce login <publisher>`
+   - プロンプトで PAT を入力
+5. パッケージ確認
+   - `npm run compile`
+   - `npm run package:vsix`
+6. 公開
+   - `npm run publish:marketplace`
+
+補足:
+- Open VSX にも公開する場合は `ovsx` を利用して別途 publish します。
+- 初回公開前に README のスクリーンショット、ライセンス、リポジトリ URL を整えると審査/利用者理解がスムーズです。
 
 ## トラブルシュート
 
