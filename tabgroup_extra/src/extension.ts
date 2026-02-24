@@ -15,6 +15,11 @@ interface SavedTabGroup {
   readonly createdAt: string;
 }
 
+interface TabLike {
+  readonly label: string;
+  readonly input: unknown;
+}
+
 const STORAGE_KEY = 'tabgroupExtra.savedGroups';
 const COLOR_ITEMS: ReadonlyArray<{ readonly label: string; readonly color: GroupColor }> = [
   { label: 'Grey', color: 'grey' },
@@ -205,30 +210,39 @@ function collectTabsFromContext(args: unknown[]): SavedTabEntry[] {
 
 function normalizeTabsFromArgs(args: unknown[]): SavedTabEntry[] {
   const tabCandidates = args.flatMap((arg) => {
-    if (arg instanceof vscode.Tab) {
+    if (isTabLike(arg)) {
       return [arg];
     }
 
     if (Array.isArray(arg)) {
-      return arg.filter((item): item is vscode.Tab => item instanceof vscode.Tab);
+      return arg.filter((item): item is TabLike => isTabLike(item));
     }
 
     const maybeTabs = (arg as { tabs?: unknown } | undefined)?.tabs;
     if (Array.isArray(maybeTabs)) {
-      return maybeTabs.filter((item): item is vscode.Tab => item instanceof vscode.Tab);
+      return maybeTabs.filter((item): item is TabLike => isTabLike(item));
     }
 
     return [];
   });
 
   const mappedTabs = tabCandidates
-    .filter((tab) => tab.input instanceof vscode.TabInputText)
+    .filter((tab): tab is TabLike & { input: vscode.TabInputText } => tab.input instanceof vscode.TabInputText)
     .map((tab) => ({
-      uri: (tab.input as vscode.TabInputText).uri.toString(),
+      uri: tab.input.uri.toString(),
       previewLabel: tab.label
     }));
 
   return dedupeByUri(mappedTabs);
+}
+
+function isTabLike(value: unknown): value is TabLike {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { label?: unknown; input?: unknown };
+  return typeof candidate.label === 'string' && candidate.input !== undefined;
 }
 
 function dedupeByUri(entries: SavedTabEntry[]): SavedTabEntry[] {
