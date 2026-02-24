@@ -23,23 +23,33 @@
     "commands": [
       {
         "command": "tabgroupExtra.createGroupFromSelection",
-        "title": "TabGroup Extra: 選択タブからグループ作成"
+        "title": "選択タブからグループ作成",
+        "category": "TabGroup Extra",
+        "icon": "$(new-folder)"
       },
       {
         "command": "tabgroupExtra.restoreGroup",
-        "title": "TabGroup Extra: グループを復元"
+        "title": "復元する",
+        "category": "TabGroup Extra",
+        "icon": "$(debug-start)"
       },
       {
         "command": "tabgroupExtra.closeGroupTabs",
-        "title": "TabGroup Extra: グループのタブを閉じる"
+        "title": "グループを閉じる",
+        "category": "TabGroup Extra",
+        "icon": "$(close-all)"
       },
       {
         "command": "tabgroupExtra.deleteGroup",
-        "title": "TabGroup Extra: グループを削除"
+        "title": "削除する",
+        "category": "TabGroup Extra",
+        "icon": "$(trash)"
       },
       {
         "command": "tabgroupExtra.refreshSavedGroups",
-        "title": "TabGroup Extra: 保存済みグループを更新"
+        "title": "保存済みグループを更新",
+        "category": "TabGroup Extra",
+        "icon": "$(refresh)"
       }
     ],
     "viewsContainers": {
@@ -74,7 +84,7 @@
           "command": "tabgroupExtra.deleteGroup"
         }
       ],
-      "editor/title/context": [
+      "tab/context": [
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
@@ -94,14 +104,29 @@
           "group": "inline"
         },
         {
+          "command": "tabgroupExtra.restoreGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.restore",
+          "group": "inline"
+        },
+        {
           "command": "tabgroupExtra.closeGroupTabs",
           "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
-          "group": "inline"
+          "group": "inline@2"
+        },
+        {
+          "command": "tabgroupExtra.closeGroupTabs",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.close",
+          "group": "inline@2"
         },
         {
           "command": "tabgroupExtra.deleteGroup",
           "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
-          "group": "inline"
+          "group": "inline@3"
+        },
+        {
+          "command": "tabgroupExtra.deleteGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupAction.delete",
+          "group": "inline@3"
         }
       ]
     }

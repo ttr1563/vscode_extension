@@ -34,20 +34,47 @@ const COLOR_ITEMS: ReadonlyArray<{ readonly label: string; readonly color: Group
 
 class SavedGroupItem extends vscode.TreeItem {
   constructor(public readonly group: SavedTabGroup) {
-    super(`${group.name} (${group.tabs.length})`, vscode.TreeItemCollapsibleState.None);
+    super(`${group.name} (${group.tabs.length})`, vscode.TreeItemCollapsibleState.Expanded);
     this.description = `${group.color} • ${new Date(group.createdAt).toLocaleString()}`;
     this.contextValue = 'tabGroupItem';
     this.tooltip = `${group.name}\nColor: ${group.color}\nTabs: ${group.tabs.map((tab) => tab.previewLabel).join(', ')}`;
-    this.command = {
-      command: 'tabgroupExtra.restoreGroup',
-      title: 'Restore Group',
-      arguments: [group]
-    };
+    this.iconPath = new vscode.ThemeIcon('folder');
   }
 }
 
-class SavedGroupsProvider implements vscode.TreeDataProvider<SavedGroupItem> {
-  private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<SavedGroupItem | undefined>();
+class GroupActionItem extends vscode.TreeItem {
+  constructor(public readonly action: 'restore' | 'close' | 'delete', public readonly group: SavedTabGroup) {
+    const labelMap: Record<'restore' | 'close' | 'delete', string> = {
+      restore: '復元する',
+      close: 'グループを閉じる',
+      delete: '削除する'
+    };
+
+    const commandMap: Record<'restore' | 'close' | 'delete', string> = {
+      restore: 'tabgroupExtra.restoreGroup',
+      close: 'tabgroupExtra.closeGroupTabs',
+      delete: 'tabgroupExtra.deleteGroup'
+    };
+
+    const iconMap: Record<'restore' | 'close' | 'delete', vscode.ThemeIcon> = {
+      restore: new vscode.ThemeIcon('debug-start'),
+      close: new vscode.ThemeIcon('close-all'),
+      delete: new vscode.ThemeIcon('trash')
+    };
+
+    super(labelMap[action], vscode.TreeItemCollapsibleState.None);
+    this.contextValue = `tabGroupAction.${action}`;
+    this.command = {
+      command: commandMap[action],
+      title: labelMap[action],
+      arguments: [group]
+    };
+    this.iconPath = iconMap[action];
+  }
+}
+
+class SavedGroupsProvider implements vscode.TreeDataProvider<SavedGroupItem | GroupActionItem> {
+  private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<SavedGroupItem | GroupActionItem | undefined>();
   public readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -56,12 +83,24 @@ class SavedGroupsProvider implements vscode.TreeDataProvider<SavedGroupItem> {
     this.onDidChangeTreeDataEmitter.fire(undefined);
   }
 
-  public getTreeItem(element: SavedGroupItem): vscode.TreeItem {
+  public getTreeItem(element: SavedGroupItem | GroupActionItem): vscode.TreeItem {
     return element;
   }
 
-  public getChildren(): SavedGroupItem[] {
-    return readSavedGroups(this.context).map((group) => new SavedGroupItem(group));
+  public getChildren(element?: SavedGroupItem | GroupActionItem): Array<SavedGroupItem | GroupActionItem> {
+    if (!element) {
+      return readSavedGroups(this.context).map((group) => new SavedGroupItem(group));
+    }
+
+    if (element instanceof SavedGroupItem) {
+      return [
+        new GroupActionItem('restore', element.group),
+        new GroupActionItem('close', element.group),
+        new GroupActionItem('delete', element.group)
+      ];
+    }
+
+    return [];
   }
 }
 
@@ -124,7 +163,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('tabgroupExtra.restoreGroup', async (input?: SavedTabGroup) => {
+    vscode.commands.registerCommand('tabgroupExtra.restoreGroup', async (input?: unknown) => {
       const selectedGroup = await resolveGroupSelection(context, input);
       if (!selectedGroup) {
         return;
@@ -144,7 +183,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('tabgroupExtra.closeGroupTabs', async (input?: SavedTabGroup) => {
+    vscode.commands.registerCommand('tabgroupExtra.closeGroupTabs', async (input?: unknown) => {
       const selectedGroup = await resolveGroupSelection(context, input);
       if (!selectedGroup) {
         return;
@@ -167,7 +206,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('tabgroupExtra.deleteGroup', async (input?: SavedTabGroup) => {
+    vscode.commands.registerCommand('tabgroupExtra.deleteGroup', async (input?: unknown) => {
       const selectedGroup = await resolveGroupSelection(context, input);
       if (!selectedGroup) {
         return;
@@ -256,10 +295,11 @@ function dedupeByUri(entries: SavedTabEntry[]): SavedTabEntry[] {
 
 async function resolveGroupSelection(
   context: vscode.ExtensionContext,
-  input?: SavedTabGroup
+  input?: unknown
 ): Promise<SavedTabGroup | undefined> {
-  if (input) {
-    return input;
+  const groupFromInput = extractGroupFromInput(input);
+  if (groupFromInput) {
+    return groupFromInput;
   }
 
   const savedGroups = readSavedGroups(context);
@@ -278,6 +318,33 @@ async function resolveGroupSelection(
   );
 
   return picked?.group;
+}
+
+function extractGroupFromInput(input: unknown): SavedTabGroup | undefined {
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+
+  if (input instanceof SavedGroupItem) {
+    return input.group;
+  }
+
+  if (input instanceof GroupActionItem) {
+    return input.group;
+  }
+
+  const candidate = input as Partial<SavedTabGroup>;
+  if (
+    typeof candidate.id === 'string' &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.color === 'string' &&
+    Array.isArray(candidate.tabs) &&
+    typeof candidate.createdAt === 'string'
+  ) {
+    return candidate as SavedTabGroup;
+  }
+
+  return undefined;
 }
 
 function readSavedGroups(context: vscode.ExtensionContext): SavedTabGroup[] {
