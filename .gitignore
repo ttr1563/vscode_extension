@@ -205,3 +205,34 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Node modules
+node_modules/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Secrets / credentials (important for public repos)
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+.npmrc
+.yarnrc.yml
+
+# SSH / cloud credentials
+.ssh/
+.aws/
+.azure/
+.gcp/
