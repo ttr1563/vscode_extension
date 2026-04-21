@@ -3,17 +3,7 @@
   "displayName": "TabGroup Extra",
   "description": "Chromeライクな色付きタブグループ管理を補助するVS Code拡張",
   "version": "0.0.1",
-  "publisher": "ttr1563",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ttr1563/vscode_extension.git",
-    "directory": "tabgroup_extra"
-  },
-  "homepage": "https://github.com/ttr1563/vscode_extension/tree/main/tabgroup_extra#readme",
-  "bugs": {
-    "url": "https://github.com/ttr1563/vscode_extension/issues"
-  },
+  "publisher": "local-dev",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -23,12 +13,13 @@
   "activationEvents": [
     "onStartupFinished",
     "onCommand:tabgroupExtra.createGroupFromSelection",
-    "onCommand:tabgroupExtra.addSelectionToExistingGroup",
     "onCommand:tabgroupExtra.restoreGroup",
     "onCommand:tabgroupExtra.deleteGroup",
     "onCommand:tabgroupExtra.closeGroupTabs",
     "onCommand:tabgroupExtra.openSavedTab",
-    "onView:tabgroupExtra.savedGroupsView"
+    "onView:tabgroupExtra.savedGroupsView",
+    "onCommand:tabgroupExtra.copyAbsolutePath",
+    "onCommand:tabgroupExtra.copyRelativePath"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -38,12 +29,6 @@
         "title": "選択タブからグループ作成",
         "category": "TabGroup Extra",
         "icon": "$(new-folder)"
-      },
-      {
-        "command": "tabgroupExtra.addSelectionToExistingGroup",
-        "title": "選択タブを既存グループへ追加",
-        "category": "TabGroup Extra",
-        "icon": "$(list-selection)"
       },
       {
         "command": "tabgroupExtra.restoreGroup",
@@ -74,6 +59,18 @@
         "title": "保存タブを開く",
         "category": "TabGroup Extra",
         "icon": "$(go-to-file)"
+      },
+      {
+        "command": "tabgroupExtra.copyAbsolutePath",
+        "title": "絶対パスをコピー",
+        "category": "TabGroup Extra",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "tabgroupExtra.copyRelativePath",
+        "title": "相対パスをコピー",
+        "category": "TabGroup Extra",
+        "icon": "$(copy)"
       }
     ],
     "viewsContainers": {
@@ -99,9 +96,6 @@
           "command": "tabgroupExtra.createGroupFromSelection"
         },
         {
-          "command": "tabgroupExtra.addSelectionToExistingGroup"
-        },
-        {
           "command": "tabgroupExtra.restoreGroup"
         },
         {
@@ -109,26 +103,24 @@
         },
         {
           "command": "tabgroupExtra.deleteGroup"
+        },
+        {
+          "command": "tabgroupExtra.copyAbsolutePath"
+        },
+        {
+          "command": "tabgroupExtra.copyRelativePath"
         }
       ],
       "tab/context": [
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
-        },
-        {
-          "command": "tabgroupExtra.addSelectionToExistingGroup",
-          "group": "navigation@91"
         }
       ],
       "editor/title/context": [
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
-        },
-        {
-          "command": "tabgroupExtra.addSelectionToExistingGroup",
-          "group": "navigation@91"
         }
       ],
       "view/title": [
@@ -158,15 +150,23 @@
           "command": "tabgroupExtra.openSavedTab",
           "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupTabItem",
           "group": "inline"
+        },
+        {
+          "command": "tabgroupExtra.copyAbsolutePath",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupTabItem",
+          "group": "inline@2"
+        },
+        {
+          "command": "tabgroupExtra.copyRelativePath",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupTabItem",
+          "group": "inline@3"
         }
       ]
     }
   },
   "scripts": {
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "package:vsix": "npx @vscode/vsce package",
-    "publish:marketplace": "npx @vscode/vsce publish"
+    "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

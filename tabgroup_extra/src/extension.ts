@@ -126,6 +126,32 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('tabgroupExtra.copyAbsolutePath', async (input?: unknown) => {
+      const tab = extractTabEntryFromInput(input);
+      if (!tab) {
+        return;
+      }
+
+      const absolutePath = getAbsolutePathFromSavedTab(tab);
+      await vscode.env.clipboard.writeText(absolutePath);
+      vscode.window.showInformationMessage(`絶対パスをコピーしました: ${absolutePath}`);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('tabgroupExtra.copyRelativePath', async (input?: unknown) => {
+      const tab = extractTabEntryFromInput(input);
+      if (!tab) {
+        return;
+      }
+
+      const relativePath = getRelativePathFromSavedTab(tab);
+      await vscode.env.clipboard.writeText(relativePath);
+      vscode.window.showInformationMessage(`相対パスをコピーしました: ${relativePath}`);
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('tabgroupExtra.createGroupFromSelection', async (...args: unknown[]) => {
       const tabs = collectTabsFromContext(args);
 
@@ -174,56 +200,17 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('tabgroupExtra.addSelectionToExistingGroup', async (...args: unknown[]) => {
-      const tabs = collectTabsFromContext(args);
-      if (tabs.length === 0) {
-        vscode.window.showWarningMessage('タブが取得できませんでした。タブを選択してから実行してください。');
-        return;
-      }
-
-      const selectedGroup = await resolveGroupSelection(context);
-      if (!selectedGroup) {
-        return;
-      }
-
-      const mergedTabs = dedupeByUri([...selectedGroup.tabs, ...tabs]);
-      const addedCount = mergedTabs.length - selectedGroup.tabs.length;
-      if (addedCount === 0) {
-        vscode.window.showInformationMessage(`グループ「${selectedGroup.name}」に追加できる新規タブはありませんでした。`);
-        return;
-      }
-
-      const updatedGroups = readSavedGroups(context).map((group) =>
-        group.id === selectedGroup.id
-          ? {
-              ...group,
-              tabs: mergedTabs
-            }
-          : group
-      );
-      await context.globalState.update(STORAGE_KEY, updatedGroups);
-      provider.refresh();
-      vscode.window.showInformationMessage(`グループ「${selectedGroup.name}」へ ${addedCount} タブ追加しました。`);
-    })
-  );
-
-  context.subscriptions.push(
     vscode.commands.registerCommand('tabgroupExtra.restoreGroup', async (input?: unknown) => {
       const selectedGroup = await resolveGroupSelection(context, input);
       if (!selectedGroup) {
         return;
       }
 
-      const targetViewColumn = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.Active;
       let restoredCount = 0;
       for (const savedTab of selectedGroup.tabs) {
         try {
           const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(savedTab.uri));
-          await vscode.window.showTextDocument(document, {
-            preview: false,
-            preserveFocus: true,
-            viewColumn: targetViewColumn
-          });
+          await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true });
           restoredCount += 1;
         } catch {
           vscode.window.showWarningMessage(`復元できないタブがあります: ${savedTab.previewLabel}`);
@@ -242,7 +229,8 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       const uriSet = new Set<string>(selectedGroup.tabs.map((tab) => tab.uri));
-      const closableTabs = vscode.window.tabGroups.activeTabGroup.tabs
+      const closableTabs = vscode.window.tabGroups.all
+        .flatMap((group) => group.tabs)
         .filter((tab): tab is vscode.Tab & { input: vscode.TabInputText } => tab.input instanceof vscode.TabInputText)
         .filter((tab) => uriSet.has(tab.input.uri.toString()));
 
@@ -441,6 +429,21 @@ function extractTabEntryFromInput(input: unknown): SavedTabEntry | undefined {
   }
 
   return undefined;
+}
+
+
+function getAbsolutePathFromSavedTab(tab: SavedTabEntry): string {
+  const uri = vscode.Uri.parse(tab.uri);
+  if (uri.scheme === 'file') {
+    return uri.fsPath;
+  }
+
+  return uri.toString();
+}
+
+function getRelativePathFromSavedTab(tab: SavedTabEntry): string {
+  const uri = vscode.Uri.parse(tab.uri);
+  return vscode.workspace.asRelativePath(uri, false);
 }
 
 function readSavedGroups(context: vscode.ExtensionContext): SavedTabGroup[] {
