@@ -200,6 +200,41 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('tabgroupExtra.addSelectionToExistingGroup', async (...args: unknown[]) => {
+      const tabs = collectTabsFromContext(args);
+      if (tabs.length === 0) {
+        vscode.window.showWarningMessage('タブが取得できませんでした。タブを選択してから実行してください。');
+        return;
+      }
+
+      const selectedGroup = findGroupFromArgs(args) ?? await resolveGroupSelection(context);
+      if (!selectedGroup) {
+        return;
+      }
+
+      const mergedTabs = dedupeByUri([...selectedGroup.tabs, ...tabs]);
+      const addedCount = mergedTabs.length - selectedGroup.tabs.length;
+      if (addedCount === 0) {
+        vscode.window.showInformationMessage(`グループ「${selectedGroup.name}」に追加できる新規タブはありませんでした。`);
+        return;
+      }
+
+      const updatedGroups = readSavedGroups(context).map((group) =>
+        group.id === selectedGroup.id
+          ? {
+              ...group,
+              tabs: mergedTabs
+            }
+          : group
+      );
+
+      await context.globalState.update(STORAGE_KEY, updatedGroups);
+      provider.refresh();
+      vscode.window.showInformationMessage(`グループ「${selectedGroup.name}」へ ${addedCount} タブ追加しました。`);
+    })
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('tabgroupExtra.restoreGroup', async (input?: unknown) => {
       const selectedGroup = await resolveGroupSelection(context, input);
       if (!selectedGroup) {
@@ -288,6 +323,7 @@ function collectTabsFromContext(args: unknown[]): SavedTabEntry[] {
 
 function normalizeTabsFromArgs(args: unknown[]): SavedTabEntry[] {
   const tabCandidates: TabLike[] = [];
+  const visited = new Set<unknown>();
 
   const visit = (value: unknown): void => {
     if (!value) {
@@ -299,23 +335,21 @@ function normalizeTabsFromArgs(args: unknown[]): SavedTabEntry[] {
       return;
     }
 
+    if (typeof value !== 'object') {
+      return;
+    }
+
+    if (visited.has(value)) {
+      return;
+    }
+    visited.add(value);
+
     if (Array.isArray(value)) {
       value.forEach((entry) => visit(entry));
       return;
     }
 
-    if (typeof value === 'object') {
-      const candidate = value as Record<string, unknown>;
-      if ('tab' in candidate) {
-        visit(candidate.tab);
-      }
-      if ('tabs' in candidate) {
-        visit(candidate.tabs);
-      }
-      if ('selectedTabs' in candidate) {
-        visit(candidate.selectedTabs);
-      }
-    }
+    Object.values(value as Record<string, unknown>).forEach((entry) => visit(entry));
   };
 
   args.forEach((arg) => visit(arg));
@@ -385,6 +419,42 @@ async function resolveGroupSelection(
   );
 
   return picked?.group;
+}
+
+function findGroupFromArgs(args: unknown[]): SavedTabGroup | undefined {
+  const visited = new Set<unknown>();
+  let found: SavedTabGroup | undefined;
+
+  const visit = (value: unknown): void => {
+    if (!value || found) {
+      return;
+    }
+
+    const group = extractGroupFromInput(value);
+    if (group) {
+      found = group;
+      return;
+    }
+
+    if (typeof value !== 'object') {
+      return;
+    }
+
+    if (visited.has(value)) {
+      return;
+    }
+    visited.add(value);
+
+    if (Array.isArray(value)) {
+      value.forEach((entry) => visit(entry));
+      return;
+    }
+
+    Object.values(value as Record<string, unknown>).forEach((entry) => visit(entry));
+  };
+
+  args.forEach((arg) => visit(arg));
+  return found;
 }
 
 function extractGroupFromInput(input: unknown): SavedTabGroup | undefined {

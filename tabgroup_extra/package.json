@@ -13,6 +13,7 @@
   "activationEvents": [
     "onStartupFinished",
     "onCommand:tabgroupExtra.createGroupFromSelection",
+    "onCommand:tabgroupExtra.addSelectionToExistingGroup",
     "onCommand:tabgroupExtra.restoreGroup",
     "onCommand:tabgroupExtra.deleteGroup",
     "onCommand:tabgroupExtra.closeGroupTabs",
@@ -29,6 +30,12 @@
         "title": "選択タブからグループ作成",
         "category": "TabGroup Extra",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "tabgroupExtra.addSelectionToExistingGroup",
+        "title": "選択タブを既存グループへ追加",
+        "category": "TabGroup Extra",
+        "icon": "$(diff-added)"
       },
       {
         "command": "tabgroupExtra.restoreGroup",
@@ -96,6 +103,9 @@
           "command": "tabgroupExtra.createGroupFromSelection"
         },
         {
+          "command": "tabgroupExtra.addSelectionToExistingGroup"
+        },
+        {
           "command": "tabgroupExtra.restoreGroup"
         },
         {
@@ -115,12 +125,20 @@
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
+        },
+        {
+          "command": "tabgroupExtra.addSelectionToExistingGroup",
+          "group": "navigation@91"
         }
       ],
       "editor/title/context": [
         {
           "command": "tabgroupExtra.createGroupFromSelection",
           "group": "navigation@90"
+        },
+        {
+          "command": "tabgroupExtra.addSelectionToExistingGroup",
+          "group": "navigation@91"
         }
       ],
       "view/title": [
@@ -135,6 +153,11 @@
           "command": "tabgroupExtra.restoreGroup",
           "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
           "group": "inline"
+        },
+        {
+          "command": "tabgroupExtra.addSelectionToExistingGroup",
+          "when": "view == tabgroupExtra.savedGroupsView && viewItem == tabGroupItem",
+          "group": "navigation@1"
         },
         {
           "command": "tabgroupExtra.closeGroupTabs",

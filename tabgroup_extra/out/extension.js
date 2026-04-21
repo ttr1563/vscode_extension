@@ -97,6 +97,24 @@ function activate(context) {
             vscode.window.showWarningMessage(`タブを開けませんでした: ${tab.previewLabel}`);
         }
     }));
+    context.subscriptions.push(vscode.commands.registerCommand('tabgroupExtra.copyAbsolutePath', async (input) => {
+        const tab = extractTabEntryFromInput(input);
+        if (!tab) {
+            return;
+        }
+        const absolutePath = getAbsolutePathFromSavedTab(tab);
+        await vscode.env.clipboard.writeText(absolutePath);
+        vscode.window.showInformationMessage(`絶対パスをコピーしました: ${absolutePath}`);
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('tabgroupExtra.copyRelativePath', async (input) => {
+        const tab = extractTabEntryFromInput(input);
+        if (!tab) {
+            return;
+        }
+        const relativePath = getRelativePathFromSavedTab(tab);
+        await vscode.env.clipboard.writeText(relativePath);
+        vscode.window.showInformationMessage(`相対パスをコピーしました: ${relativePath}`);
+    }));
     context.subscriptions.push(vscode.commands.registerCommand('tabgroupExtra.createGroupFromSelection', async (...args) => {
         const tabs = collectTabsFromContext(args);
         if (tabs.length === 0) {
@@ -137,7 +155,7 @@ function activate(context) {
             vscode.window.showWarningMessage('タブが取得できませんでした。タブを選択してから実行してください。');
             return;
         }
-        const selectedGroup = await resolveGroupSelection(context);
+        const selectedGroup = findGroupFromArgs(args) ?? await resolveGroupSelection(context);
         if (!selectedGroup) {
             return;
         }
@@ -162,16 +180,11 @@ function activate(context) {
         if (!selectedGroup) {
             return;
         }
-        const targetViewColumn = vscode.window.activeTextEditor?.viewColumn ?? vscode.ViewColumn.Active;
         let restoredCount = 0;
         for (const savedTab of selectedGroup.tabs) {
             try {
                 const document = await vscode.workspace.openTextDocument(vscode.Uri.parse(savedTab.uri));
-                await vscode.window.showTextDocument(document, {
-                    preview: false,
-                    preserveFocus: true,
-                    viewColumn: targetViewColumn
-                });
+                await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true });
                 restoredCount += 1;
             }
             catch {
@@ -186,7 +199,8 @@ function activate(context) {
             return;
         }
         const uriSet = new Set(selectedGroup.tabs.map((tab) => tab.uri));
-        const closableTabs = vscode.window.tabGroups.activeTabGroup.tabs
+        const closableTabs = vscode.window.tabGroups.all
+            .flatMap((group) => group.tabs)
             .filter((tab) => tab.input instanceof vscode.TabInputText)
             .filter((tab) => uriSet.has(tab.input.uri.toString()));
         if (closableTabs.length === 0) {
@@ -227,6 +241,7 @@ function collectTabsFromContext(args) {
 }
 function normalizeTabsFromArgs(args) {
     const tabCandidates = [];
+    const visited = new Set();
     const visit = (value) => {
         if (!value) {
             return;
@@ -235,22 +250,18 @@ function normalizeTabsFromArgs(args) {
             tabCandidates.push(value);
             return;
         }
+        if (typeof value !== 'object') {
+            return;
+        }
+        if (visited.has(value)) {
+            return;
+        }
+        visited.add(value);
         if (Array.isArray(value)) {
             value.forEach((entry) => visit(entry));
             return;
         }
-        if (typeof value === 'object') {
-            const candidate = value;
-            if ('tab' in candidate) {
-                visit(candidate.tab);
-            }
-            if ('tabs' in candidate) {
-                visit(candidate.tabs);
-            }
-            if ('selectedTabs' in candidate) {
-                visit(candidate.selectedTabs);
-            }
-        }
+        Object.values(value).forEach((entry) => visit(entry));
     };
     args.forEach((arg) => visit(arg));
     const mappedTabs = tabCandidates
@@ -304,6 +315,34 @@ async function resolveGroupSelection(context, input) {
     })), { placeHolder: '操作するグループを選択してください' });
     return picked?.group;
 }
+function findGroupFromArgs(args) {
+    const visited = new Set();
+    let found;
+    const visit = (value) => {
+        if (!value || found) {
+            return;
+        }
+        const group = extractGroupFromInput(value);
+        if (group) {
+            found = group;
+            return;
+        }
+        if (typeof value !== 'object') {
+            return;
+        }
+        if (visited.has(value)) {
+            return;
+        }
+        visited.add(value);
+        if (Array.isArray(value)) {
+            value.forEach((entry) => visit(entry));
+            return;
+        }
+        Object.values(value).forEach((entry) => visit(entry));
+    };
+    args.forEach((arg) => visit(arg));
+    return found;
+}
 function extractGroupFromInput(input) {
     if (!input || typeof input !== 'object') {
         return undefined;
@@ -336,6 +375,17 @@ function extractTabEntryFromInput(input) {
         return candidate;
     }
     return undefined;
+}
+function getAbsolutePathFromSavedTab(tab) {
+    const uri = vscode.Uri.parse(tab.uri);
+    if (uri.scheme === 'file') {
+        return uri.fsPath;
+    }
+    return uri.toString();
+}
+function getRelativePathFromSavedTab(tab) {
+    const uri = vscode.Uri.parse(tab.uri);
+    return vscode.workspace.asRelativePath(uri, false);
 }
 function readSavedGroups(context) {
     const saved = context.globalState.get(STORAGE_KEY);
